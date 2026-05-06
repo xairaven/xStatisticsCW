@@ -7,6 +7,7 @@ use thiserror::Error;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Config {
+    pub app_id: String,
     pub log_level: LogLevel,
     pub theme: Theme,
 }
@@ -14,6 +15,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            app_id: "".to_string(),
             log_level: LogLevel::default(),
             theme: Theme::Dark,
         }

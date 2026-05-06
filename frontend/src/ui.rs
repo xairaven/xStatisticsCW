@@ -5,15 +5,15 @@ use crate::ui::creator::AppCreator;
 use thiserror::Error;
 
 pub struct Ui {
-    min_width: f32,
-    min_height: f32,
+    width: f32,
+    height: f32,
 }
 
 impl Default for Ui {
     fn default() -> Self {
         Self {
-            min_width: 950.0,
-            min_height: 550.0,
+            width: 500.0,
+            height: 320.0,
         }
     }
 }
@@ -24,8 +24,8 @@ impl Ui {
             viewport: egui::ViewportBuilder::default()
                 .with_app_id(PROJECT_TITLE) // Wayland requirement
                 .with_title(PROJECT_TITLE)
-                .with_inner_size([self.min_width, self.min_height])
-                .with_min_inner_size([self.min_width, self.min_height])
+                .with_inner_size([self.width, self.height])
+                .with_min_inner_size([self.width, self.height])
                 .with_icon(
                     eframe::icon_data::from_png_bytes(
                         &include_bytes!("../assets/icon.png")[..],
@@ -64,6 +64,5 @@ pub enum GraphicsBackendError {
 
 pub mod creator;
 pub mod modals;
+pub mod pages;
 pub mod workspace;
-
-pub mod components {}
