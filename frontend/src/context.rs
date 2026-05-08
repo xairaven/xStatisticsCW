@@ -1,9 +1,8 @@
-use crate::config::Config;
+use crate::config::{Config, Theme};
 use crate::errors::ProjectError;
 use crate::logs::LogLevel;
 use crate::ui::pages::Page;
 use crossbeam::channel::{Receiver, Sender};
-use egui::Theme;
 
 #[derive(Debug)]
 pub struct Context {
@@ -29,6 +28,14 @@ impl Context {
             errors_rx,
         }
     }
+
+    pub fn save_settings(&mut self) {
+        self.config = Config::from(&self.settings);
+
+        if let Err(error) = self.config.save_to_file() {
+            let _ = self.errors_tx.try_send(error);
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -44,6 +51,16 @@ impl From<&Config> for RuntimeSettings {
             app_id: config.app_id.clone(),
             log_level: config.log_level,
             theme: config.theme,
+        }
+    }
+}
+
+impl From<&RuntimeSettings> for Config {
+    fn from(settings: &RuntimeSettings) -> Self {
+        Self {
+            app_id: settings.app_id.clone(),
+            log_level: settings.log_level,
+            theme: settings.theme,
         }
     }
 }

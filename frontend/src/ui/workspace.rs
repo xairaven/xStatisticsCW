@@ -12,10 +12,10 @@ pub struct Workspace {
 }
 
 impl Workspace {
-    pub fn new(_context: &Context) -> Self {
+    pub fn new(context: &Context) -> Self {
         Self {
             main: MainPage,
-            settings: SettingsPage,
+            settings: SettingsPage::new(context),
             info: Default::default(),
         }
     }
