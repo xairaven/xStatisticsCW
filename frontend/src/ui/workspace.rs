@@ -14,9 +14,9 @@ pub struct Workspace {
 impl Workspace {
     pub fn new(context: &Context) -> Self {
         Self {
-            main: MainPage,
+            main: MainPage::default(),
             settings: SettingsPage::new(context),
-            info: Default::default(),
+            info: InfoPage::default(),
         }
     }
 

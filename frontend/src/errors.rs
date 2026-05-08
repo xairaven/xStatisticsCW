@@ -1,10 +1,11 @@
 use crate::config::ConfigError;
 use crate::logs::LogsError;
 use crate::ui::GraphicsBackendError;
+use crate::ui::errors::InputError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum ProjectError {
+pub enum FrontendError {
     #[error("Configuration. {0}")]
     Config(#[from] ConfigError),
 
@@ -13,4 +14,7 @@ pub enum ProjectError {
 
     #[error("Logger. {0}")]
     Logs(#[from] LogsError),
+
+    #[error("Input. {0}")]
+    Input(#[from] InputError),
 }

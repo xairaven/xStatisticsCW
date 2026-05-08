@@ -1,5 +1,5 @@
 use crate::config::{Config, Theme};
-use crate::errors::ProjectError;
+use crate::errors::FrontendError;
 use crate::logs::LogLevel;
 use crate::ui::pages::Page;
 use crossbeam::channel::{Receiver, Sender};
@@ -11,8 +11,8 @@ pub struct Context {
     pub config: Config,
 
     // Channels
-    pub errors_tx: Sender<ProjectError>,
-    pub errors_rx: Receiver<ProjectError>,
+    pub errors_tx: Sender<FrontendError>,
+    pub errors_rx: Receiver<FrontendError>,
 }
 
 impl Context {

@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::errors::ProjectError;
+use crate::errors::FrontendError;
 use chrono::{Datelike, Local, Timelike};
 use log::LevelFilter;
 use o2o::o2o;
@@ -43,7 +43,7 @@ impl Logger {
         }
     }
 
-    pub fn setup(self) -> Result<(), ProjectError> {
+    pub fn setup(self) -> Result<(), FrontendError> {
         if self.log_level.eq(&LevelFilter::Off) {
             return Ok(());
         }
@@ -71,7 +71,7 @@ impl Logger {
             .chain(file)
             .apply()
             .map_err(LogsError::SetLoggerError)
-            .map_err(ProjectError::Logs)
+            .map_err(FrontendError::Logs)
     }
 
     fn generate_file_name() -> String {
@@ -86,7 +86,7 @@ impl Logger {
         format!("{date}.log")
     }
 
-    pub fn path(file_name: String) -> Result<PathBuf, ProjectError> {
+    pub fn path(file_name: String) -> Result<PathBuf, FrontendError> {
         const LOG_DIR: &str = "logs";
         let mut current_dir = std::env::current_exe().map_err(LogsError::IO)?;
         current_dir.pop(); // Remove executable name

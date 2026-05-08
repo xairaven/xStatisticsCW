@@ -1,5 +1,5 @@
 use crate::context::Context;
-use crate::errors::ProjectError;
+use crate::errors::FrontendError;
 use crate::ui::modals::{Modal, ModalFields};
 use egui::{RichText, WidgetText};
 
@@ -32,7 +32,7 @@ impl Modal for ErrorModal {
 }
 
 impl ErrorModal {
-    pub fn new(error: ProjectError) -> Self {
+    pub fn new(error: FrontendError) -> Self {
         Self {
             modal_fields: ModalFields::default()
                 .with_title("❎ Error".to_string())

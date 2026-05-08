@@ -1,6 +1,6 @@
 use crate::PROJECT_TITLE;
 use crate::config::Config;
-use crate::errors::ProjectError;
+use crate::errors::FrontendError;
 use crate::ui::creator::AppCreator;
 use thiserror::Error;
 
@@ -19,7 +19,7 @@ impl Default for Ui {
 }
 
 impl Ui {
-    pub fn start(self, config: Config) -> Result<(), ProjectError> {
+    pub fn start(self, config: Config) -> Result<(), FrontendError> {
         let native_options = eframe::NativeOptions {
             viewport: egui::ViewportBuilder::default()
                 .with_app_id(PROJECT_TITLE) // Wayland requirement
@@ -41,10 +41,10 @@ impl Ui {
             Box::new(|cc| Ok(Box::new(AppCreator::new(cc, config)))),
         )
         .map_err(|error| GraphicsBackendError::FailedRunNative(error.to_string()))
-        .map_err(ProjectError::GraphicsBackend)
+        .map_err(FrontendError::GraphicsBackend)
     }
 
-    pub fn native_panic_message(error: ProjectError) {
+    pub fn native_panic_message(error: FrontendError) {
         rfd::MessageDialog::new()
             .set_title("Critical Error")
             .set_description(error.to_string())
@@ -63,6 +63,7 @@ pub enum GraphicsBackendError {
 }
 
 pub mod creator;
+pub mod errors;
 pub mod modals;
 pub mod pages;
 pub mod workspace;

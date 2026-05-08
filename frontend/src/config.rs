@@ -1,4 +1,4 @@
-use crate::errors::ProjectError;
+use crate::errors::FrontendError;
 use crate::logs::LogLevel;
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -25,7 +25,7 @@ impl Default for Config {
 impl Config {
     const FILENAME: &str = "config.toml";
 
-    fn path() -> Result<PathBuf, ProjectError> {
+    fn path() -> Result<PathBuf, FrontendError> {
         let mut current_dir = std::env::current_exe().map_err(ConfigError::IO)?;
         current_dir.pop(); // Remove executable name
 
@@ -34,7 +34,7 @@ impl Config {
         Ok(current_dir.join(Self::FILENAME))
     }
 
-    pub fn from_file() -> Result<Self, ProjectError> {
+    pub fn from_file() -> Result<Self, FrontendError> {
         match Self::path() {
             Ok(path) => {
                 let text = std::fs::read_to_string(&path);
@@ -55,7 +55,7 @@ impl Config {
         }
     }
 
-    pub fn save_to_file(&self) -> Result<(), ProjectError> {
+    pub fn save_to_file(&self) -> Result<(), FrontendError> {
         let data = toml::to_string(&self).map_err(ConfigError::Serialization)?;
         let path = Self::path()?;
 

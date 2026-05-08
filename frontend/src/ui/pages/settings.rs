@@ -47,7 +47,7 @@ impl SettingsPage {
 
         if ui
             .add_enabled(
-                is_settings_synchronized,
+                !is_settings_synchronized,
                 Button::new(egui_phosphor::regular::KEY_RETURN),
             )
             .clicked()
@@ -73,7 +73,7 @@ impl SettingsPage {
 
         if ui
             .add_enabled(
-                is_settings_synchronized,
+                !is_settings_synchronized,
                 Button::new(egui_phosphor::regular::KEY_RETURN),
             )
             .clicked()
@@ -99,7 +99,7 @@ impl SettingsPage {
 
         if ui
             .add_enabled(
-                is_settings_synchronized,
+                !is_settings_synchronized,
                 Button::new(egui_phosphor::regular::KEY_RETURN),
             )
             .clicked()
