@@ -16,6 +16,8 @@ repository = "https://github.com/xairaven/xStatisticsCW"
 workspace = true
 
 [dependencies]
+backend = { path = "../backend" }
+
 chrono = "0.4.44"
 crossbeam = "0.8.4"
 egui = "0.34.1"
