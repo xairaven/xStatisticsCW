@@ -1,3 +1,6 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+pub mod client;
+pub mod models;
+pub mod errors;
+
+pub use client::WolframClient;
+pub use errors::ApiError;
