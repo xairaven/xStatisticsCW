@@ -23,16 +23,20 @@ impl WolframClient {
     pub async fn plain_text(&self, input: &str, pod: PodId) -> Result<String, ApiError> {
         let container = self.query(input).await?;
 
-        match container
+        // Seeking for needed Pod. If not found - return first.
+        let target_pod = container
             .result
             .pods
             .iter()
             .find(|p| p.id == pod.to_string())
+            .or_else(|| container.result.pods.first());
+
+        match target_pod
             .and_then(|pod| pod.sub_pods.first())
             .and_then(|sub_pod| sub_pod.plain_text.as_ref())
         {
             None => {
-                log::error!("Plain Text is not found in the response");
+                log::error!("Plain Text is not found in the response.");
                 log::error!("Container: {:#?}", container);
                 Err(ApiError::PlainTextNotFound)
             },
@@ -63,16 +67,19 @@ impl WolframClient {
 
     pub async fn image(&self, input: &str, pod: PodId) -> Result<PathBuf, ApiError> {
         let file_name = Alphanumeric.sample_string(&mut rand::rng(), 16);
-
         let save_path = self.save_path(&file_name).await?;
 
         let container = self.query(input).await?;
 
-        let url = match container
+        // Seeking for needed Pod. If not found - return first.
+        let target_pod = container
             .result
             .pods
             .iter()
             .find(|p| p.id == pod.to_string())
+            .or_else(|| container.result.pods.first());
+
+        let url = match target_pod
             .and_then(|pod| pod.sub_pods.first())
             .and_then(|sub_pod| sub_pod.img.as_ref())
             .map(|img| img.src.clone())
