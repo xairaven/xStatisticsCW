@@ -23,16 +23,21 @@ impl WolframClient {
     pub async fn plain_text(&self, input: &str, pod: PodId) -> Result<String, ApiError> {
         let container = self.query(input).await?;
 
-        let result = container
+        match container
             .result
             .pods
             .iter()
             .find(|p| p.id == pod.to_string())
             .and_then(|pod| pod.sub_pods.first())
             .and_then(|sub_pod| sub_pod.plain_text.as_ref())
-            .ok_or(ApiError::ImageNotFound)?;
-
-        Ok(result.clone())
+        {
+            None => {
+                log::error!("Plain Text is not found in the response");
+                log::error!("Container: {:#?}", container);
+                Err(ApiError::PlainTextNotFound)
+            },
+            Some(text) => Ok(text.to_string()),
+        }
     }
 
     pub async fn short(&self, input: &str) -> Result<String, ApiError> {
@@ -63,7 +68,7 @@ impl WolframClient {
 
         let container = self.query(input).await?;
 
-        let url = container
+        let url = match container
             .result
             .pods
             .iter()
@@ -71,7 +76,14 @@ impl WolframClient {
             .and_then(|pod| pod.sub_pods.first())
             .and_then(|sub_pod| sub_pod.img.as_ref())
             .map(|img| img.src.clone())
-            .ok_or(ApiError::ImageNotFound)?;
+        {
+            None => {
+                log::error!("Image is not found in the response");
+                log::error!("Container: {:#?}", container);
+                return Err(ApiError::ImageNotFound);
+            },
+            Some(value) => value,
+        };
 
         let response = self.http_client.get(&url).send().await?;
 
@@ -84,6 +96,16 @@ impl WolframClient {
         } else {
             Err(ApiError::Http(response.status().as_u16()))
         }
+    }
+
+    pub fn operand_from_result(&self, text: &str) -> String {
+        // Split string by symbol "=" and get last part
+        // If there's no "=", return whole string
+        text.split('=')
+            .next_back()
+            .unwrap_or(text) // fallback (in case string is empty or doesn't contain "=")
+            .trim()
+            .to_string()
     }
 
     async fn query(&self, input: &str) -> Result<Container, ApiError> {
@@ -126,6 +148,10 @@ impl WolframClient {
 
         std::fs::create_dir_all(&current_dir).map_err(ApiError::IO)?;
 
-        Ok(current_dir.join(file_name))
+        let path = current_dir.join(file_name);
+
+        log::info!("Save path: {}", path.to_string_lossy());
+
+        Ok(path)
     }
 }

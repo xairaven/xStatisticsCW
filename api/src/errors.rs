@@ -14,6 +14,9 @@ pub enum ApiError {
     #[error("Image is not found in the response")]
     ImageNotFound,
 
+    #[error("Plain Text is not found in the response")]
+    PlainTextNotFound,
+
     #[error("I/O. {0}")]
     IO(#[from] std::io::Error),
 }
