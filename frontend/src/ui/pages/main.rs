@@ -1,7 +1,7 @@
 use crate::context::Context;
 use crate::errors::FrontendError;
 use crate::ui::errors::InputError;
-use backend::Input;
+use backend::{BackendError, Input, Solver};
 use egui::{Grid, RichText, TextEdit};
 
 #[derive(Debug, Default)]
@@ -19,7 +19,7 @@ impl MainPage {
             self.navigation(ui, context);
         });
         ui.add_space(10.0);
-        self.runner(ui, context);
+        self.solve_button(ui, context);
         ui.add_space(10.0);
         self.journal(ui, context);
     }
@@ -47,7 +47,7 @@ impl MainPage {
         });
     }
 
-    fn runner(&mut self, ui: &mut egui::Ui, context: &mut Context) {
+    fn solve_button(&mut self, ui: &mut egui::Ui, context: &mut Context) {
         ui.vertical_centered_justified(|ui| {
             // Button that runs solver
             if ui
@@ -57,20 +57,18 @@ impl MainPage {
                 )
                 .clicked()
             {
-                let input = match self.validate_inputs() {
-                    Ok(value) => value,
-                    Err(error) => {
-                        let _ = context.errors_tx.try_send(FrontendError::Input(error));
-                        return;
-                    },
-                };
-
-                // TODO
+                self.run_solver(context);
             }
         });
     }
 
     fn journal(&mut self, ui: &mut egui::Ui, context: &mut Context) {
+        // Check for logs
+        if let Ok(message) = context.journaling_rx.try_recv() {
+            let message = format!("{}\n", message);
+            self.journal_output.push_str(&message);
+        }
+
         ui.add_sized(
             ui.available_size(),
             TextEdit::multiline(&mut self.journal_output).interactive(false),
@@ -90,5 +88,57 @@ impl MainPage {
         }
 
         Ok(Input { a, b })
+    }
+
+    fn run_solver(&self, context: &mut Context) {
+        let input = match self.validate_inputs() {
+            Ok(value) => value,
+            Err(error) => {
+                let _ = context.errors_tx.try_send(FrontendError::Input(error));
+                return;
+            },
+        };
+
+        context.is_solving_in_process = true;
+
+        // Clone data needed for the thread
+        let app_id = context.settings.app_id.trim().to_string();
+        let solver_tx = context.solver_tx.clone();
+        let journaling_tx = context.journaling_tx.clone();
+
+        // Spawn a background native thread so egui doesn't freeze
+        std::thread::spawn(move || {
+            // Create a dedicated tokio runtime for the async tasks
+            let runtime = match tokio::runtime::Runtime::new() {
+                Ok(value) => value,
+                Err(error) => {
+                    let error = BackendError::Tokio(error);
+                    let _ = solver_tx.try_send(Err(error));
+                    return;
+                },
+            };
+
+            // TODO: Max Concurrent tasks
+            const MAX_CONCURRENT_TASKS: usize = 3;
+            runtime.block_on(async {
+                let solver =
+                    Solver::new(app_id, journaling_tx.clone(), MAX_CONCURRENT_TASKS);
+
+                let result = solver.solve(input).await;
+
+                // Send result back to UI
+                match result {
+                    Ok(map) => {
+                        // TODO: Fix this, now it is like this for debug
+                        let _ =
+                            journaling_tx.try_send(format!("Solver result: {:?}", map));
+                        let _ = solver_tx.send(Ok(()));
+                    },
+                    Err(error) => {
+                        let _ = solver_tx.send(Err(error));
+                    },
+                }
+            });
+        });
     }
 }

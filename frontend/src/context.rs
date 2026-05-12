@@ -2,6 +2,7 @@ use crate::config::{Config, Theme};
 use crate::errors::FrontendError;
 use crate::logs::LogLevel;
 use crate::ui::pages::Page;
+use backend::BackendError;
 use crossbeam::channel::{Receiver, Sender};
 
 #[derive(Debug)]
@@ -13,11 +14,21 @@ pub struct Context {
     // Channels
     pub errors_tx: Sender<FrontendError>,
     pub errors_rx: Receiver<FrontendError>,
+
+    pub journaling_tx: Sender<String>,
+    pub journaling_rx: Receiver<String>,
+
+    pub solver_tx: Sender<Result<(), BackendError>>,
+    pub solver_rx: Receiver<Result<(), BackendError>>,
+
+    pub is_solving_in_process: bool,
 }
 
 impl Context {
     pub fn new(config: Config) -> Self {
         let (errors_tx, errors_rx) = crossbeam::channel::unbounded();
+        let (journaling_tx, journaling_rx) = crossbeam::channel::unbounded();
+        let (solver_tx, solver_rx) = crossbeam::channel::unbounded();
 
         Self {
             ui_state: UiState::default(),
@@ -26,6 +37,12 @@ impl Context {
 
             errors_tx,
             errors_rx,
+            journaling_tx,
+            journaling_rx,
+            solver_tx,
+            solver_rx,
+
+            is_solving_in_process: false,
         }
     }
 

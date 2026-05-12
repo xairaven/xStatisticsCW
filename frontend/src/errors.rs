@@ -2,6 +2,7 @@ use crate::config::ConfigError;
 use crate::logs::LogsError;
 use crate::ui::GraphicsBackendError;
 use crate::ui::errors::InputError;
+use backend::BackendError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -17,4 +18,7 @@ pub enum FrontendError {
 
     #[error("Input. {0}")]
     Input(#[from] InputError),
+
+    #[error("Backend. {0}")]
+    Backend(#[from] BackendError),
 }
