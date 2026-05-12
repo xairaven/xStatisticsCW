@@ -49,22 +49,28 @@ impl Solver {
 
         // FINDING A INTEGRALS (Parallel)
         let (a1, a2, a3, a4) = tokio::try_join!(
-            self.short_solver(format!(
-                "Integrate({}) from x=-inf to x={}",
-                results["Line1"], input.a
-            )),
-            self.short_solver(format!(
-                "Integrate({}) from x={} to x=0",
-                results["Line2"], input.a
-            ),),
-            self.short_solver(format!(
-                "Integrate({}) from x=0 to x={}",
-                results["Line3"], input.b
-            ),),
-            self.short_solver(format!(
-                "Integrate({}) from x={} to x=inf",
-                results["Line4"], input.b
-            ))
+            self.query_solver(
+                format!(
+                    "Integrate({}) from x=-inf to x={}",
+                    results["Line1"], input.a,
+                ),
+                PodId::Result
+            ),
+            self.query_solver(
+                format!("Integrate({}) from x={} to x=0", results["Line2"], input.a),
+                PodId::Result
+            ),
+            self.query_solver(
+                format!("Integrate({}) from x=0 to x={}", results["Line3"], input.b),
+                PodId::Result
+            ),
+            self.query_solver(
+                format!(
+                    "Integrate({}) from x={} to x=inf",
+                    results["Line4"], input.b
+                ),
+                PodId::Result
+            )
         )?;
         results.insert("A1Integral".to_string(), a1);
         results.insert("A2Integral".to_string(), a2);
