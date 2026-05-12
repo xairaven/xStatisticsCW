@@ -10,4 +10,10 @@ pub enum ApiError {
 
     #[error("Wolfram API logical error: {0}")]
     Wolfram(String),
+
+    #[error("Image is not found in the response")]
+    ImageNotFound,
+
+    #[error("I/O. {0}")]
+    IO(#[from] std::io::Error),
 }
