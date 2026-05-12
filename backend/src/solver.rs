@@ -49,28 +49,22 @@ impl Solver {
 
         // FINDING A INTEGRALS (Parallel)
         let (a1, a2, a3, a4) = tokio::try_join!(
-            self.query_solver(
-                format!(
-                    "Integrate({}) from x=-inf to x={}",
-                    results["Line1"], input.a
-                ),
-                PodId::Result
-            ),
-            self.query_solver(
-                format!("Integrate({}) from x={} to x=0", results["Line2"], input.a),
-                PodId::Result
-            ),
-            self.query_solver(
-                format!("Integrate({}) from x=0 to x={}", results["Line3"], input.b),
-                PodId::Result
-            ),
-            self.query_solver(
-                format!(
-                    "Integrate({}) from x={} to x=inf",
-                    results["Line4"], input.b
-                ),
-                PodId::Result
-            )
+            self.short_solver(format!(
+                "Integrate({}) from x=-inf to x={}",
+                results["Line1"], input.a
+            )),
+            self.short_solver(format!(
+                "Integrate({}) from x={} to x=0",
+                results["Line2"], input.a
+            ),),
+            self.short_solver(format!(
+                "Integrate({}) from x=0 to x={}",
+                results["Line3"], input.b
+            ),),
+            self.short_solver(format!(
+                "Integrate({}) from x={} to x=inf",
+                results["Line4"], input.b
+            ))
         )?;
         results.insert("A1Integral".to_string(), a1);
         results.insert("A2Integral".to_string(), a2);
@@ -120,7 +114,7 @@ impl Solver {
 
         // Expanded forms and sums (Sequential for each interval due to dependencies)
         let fx2_exp = self
-            .try_query_solver(fx2.clone(), PodId::ExpandedForm)
+            .query_solver(fx2.clone(), PodId::ExpandedForm)
             .await
             .unwrap_or(fx2);
         results.insert("Fx2Integral".to_string(), fx2_exp);
@@ -139,13 +133,13 @@ impl Solver {
             .await?;
         results.insert(
             "Fx2Sum".to_string(),
-            self.try_query_solver(fx2_sum.clone(), PodId::ExpandedForm)
+            self.query_solver(fx2_sum.clone(), PodId::ExpandedForm)
                 .await
                 .unwrap_or(fx2_sum),
         );
 
         let fx3_exp = self
-            .try_query_solver(fx3.clone(), PodId::ExpandedForm)
+            .query_solver(fx3.clone(), PodId::ExpandedForm)
             .await
             .unwrap_or(fx3);
         results.insert("Fx3Integral".to_string(), fx3_exp);
@@ -167,13 +161,13 @@ impl Solver {
             .await?;
         results.insert(
             "Fx3Sum".to_string(),
-            self.try_query_solver(fx3_sum.clone(), PodId::ExpandedForm)
+            self.query_solver(fx3_sum.clone(), PodId::ExpandedForm)
                 .await
                 .unwrap_or(fx3_sum),
         );
 
         let fx4_exp = self
-            .try_query_solver(fx4.clone(), PodId::ExpandedForm)
+            .query_solver(fx4.clone(), PodId::ExpandedForm)
             .await
             .unwrap_or(fx4);
         results.insert("Fx4Integral".to_string(), fx4_exp);
@@ -198,7 +192,7 @@ impl Solver {
             .await?;
         results.insert(
             "Fx4Sum".to_string(),
-            self.try_query_solver(fx4_sum.clone(), PodId::ExpandedForm)
+            self.query_solver(fx4_sum.clone(), PodId::ExpandedForm)
                 .await
                 .unwrap_or(fx4_sum),
         );
@@ -361,17 +355,28 @@ impl Solver {
             .map_err(BackendError::Semaphore)?;
 
         self.journaler.log(format!("Requesting: {}", query));
+        log::info!("Requesting: {}", query);
 
-        let text = self.client.plain_text(&query, pod_id).await?;
+        let raw_text = self.client.plain_text(&query, pod_id).await?;
+        let clean_text = self.client.operand_from_result(&raw_text);
 
-        Ok(text)
+        Ok(clean_text)
     }
 
-    /// Method for requests that can fail to return a result
-    /// (e.g., ExpandedForm is not always present)
-    async fn try_query_solver(
-        &self, query: String, pod_id: PodId,
-    ) -> Result<String, BackendError> {
-        self.query_solver(query, pod_id).await
+    async fn short_solver(&self, query: String) -> Result<String, BackendError> {
+        // Waiting for semaphore permit to avoid spamming the API
+        let _permit = self
+            .semaphore
+            .acquire()
+            .await
+            .map_err(BackendError::Semaphore)?;
+
+        self.journaler.log(format!("Requesting: {}", query));
+        log::info!("Requesting: {}", query);
+
+        let raw_text = self.client.short(&query).await?;
+        let clean_text = self.client.operand_from_result(&raw_text);
+
+        Ok(clean_text)
     }
 }
