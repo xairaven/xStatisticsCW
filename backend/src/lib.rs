@@ -1,5 +1,8 @@
-#[derive(Debug)]
-pub struct Input {
-    pub a: isize,
-    pub b: isize,
-}
+mod errors;
+mod journal;
+mod models;
+mod solver;
+
+pub use errors::BackendError;
+pub use models::Input;
+pub use solver::Solver;
