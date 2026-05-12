@@ -2,7 +2,7 @@ use crate::context::Context;
 use crate::errors::FrontendError;
 use crate::ui::errors::InputError;
 use backend::{BackendError, Input, Solver};
-use egui::{Grid, RichText, TextEdit};
+use egui::{Grid, RichText, ScrollArea, TextEdit};
 
 #[derive(Debug, Default)]
 pub struct MainPage {
@@ -69,10 +69,15 @@ impl MainPage {
             self.journal_output.push_str(&message);
         }
 
-        ui.add_sized(
-            ui.available_size(),
-            TextEdit::multiline(&mut self.journal_output).interactive(false),
-        );
+        ScrollArea::vertical()
+            .stick_to_bottom(true)
+            .auto_shrink([false, false])
+            .show(ui, |ui| {
+                ui.add_sized(
+                    ui.available_size(),
+                    TextEdit::multiline(&mut self.journal_output).interactive(false),
+                );
+            });
     }
 
     fn validate_inputs(&self) -> Result<Input, InputError> {
