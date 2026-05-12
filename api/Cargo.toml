@@ -16,6 +16,7 @@ repository = "https://github.com/xairaven/xStatisticsCW"
 workspace = true
 
 [dependencies]
+log = "0.4.29"
 rand = "0.10.1"
 reqwest = { version = "0.13.3", default-features = false, features = ["json", "rustls", "query"]}
 serde = { version = "1.0.228", features = ["derive"] }
