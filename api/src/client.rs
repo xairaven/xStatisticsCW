@@ -1,6 +1,6 @@
-use reqwest::Client;
-use crate::models::Container;
 use crate::errors::ApiError;
+use crate::models::Container;
+use reqwest::Client;
 
 pub struct WolframClient {
     app_id: String,
@@ -19,7 +19,9 @@ impl WolframClient {
         let url = "https://api.wolframalpha.com/v2/query";
 
         // Send the GET request with URL parameters
-        let response = self.http_client.get(url)
+        let response = self
+            .http_client
+            .get(url)
             .query(&[
                 ("input", input),
                 ("appid", &self.app_id),
@@ -38,7 +40,9 @@ impl WolframClient {
 
         // Ensure Wolfram Alpha successfully parsed and computed the query
         if !container.result.success {
-            return Err(ApiError::Wolfram("Wolfram Alpha returned success = false".to_string()));
+            return Err(ApiError::Wolfram(
+                "Wolfram Alpha returned success = false".to_string(),
+            ));
         }
 
         Ok(container)

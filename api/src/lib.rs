@@ -1,6 +1,6 @@
 pub mod client;
-pub mod models;
 pub mod errors;
+pub mod models;
 
 pub use client::WolframClient;
 pub use errors::ApiError;
