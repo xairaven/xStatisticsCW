@@ -6,6 +6,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 
+#[derive(Debug)]
 pub struct WolframClient {
     app_id: String,
     http_client: Client,
@@ -121,6 +122,7 @@ impl WolframClient {
     async fn save_path(&self, file_name: &str) -> Result<PathBuf, ApiError> {
         let mut current_dir = std::env::current_exe().map_err(ApiError::IO)?;
         current_dir.pop(); // Remove executable name
+        current_dir.push("temp");
 
         std::fs::create_dir_all(&current_dir).map_err(ApiError::IO)?;
 
