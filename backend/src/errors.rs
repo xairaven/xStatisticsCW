@@ -15,4 +15,7 @@ pub enum BackendError {
 
     #[error("Failed to acquire semaphore. {0}")]
     Semaphore(AcquireError),
+
+    #[error("Tokio Runtime. {0}")]
+    Tokio(std::io::Error),
 }
