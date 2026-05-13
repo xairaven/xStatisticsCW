@@ -129,7 +129,7 @@ impl MainPage {
                 let solver =
                     Solver::new(app_id, journaling_tx.clone(), MAX_CONCURRENT_TASKS);
 
-                let result = solver.solve(input).await;
+                let result = solver.run(input).await;
 
                 // Send result back to UI
                 match result {
