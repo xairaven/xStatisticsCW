@@ -1,6 +1,7 @@
 mod errors;
 mod journal;
 mod models;
+mod report;
 mod solver;
 
 pub use errors::BackendError;

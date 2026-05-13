@@ -1,4 +1,5 @@
 use crate::journal::Journaler;
+use crate::report::ReportMaker;
 use crate::{BackendError, Input};
 use api::WolframClient;
 use api::models::PodId;
@@ -23,6 +24,13 @@ impl Solver {
             journaler: Journaler::new(log_tx),
             semaphore: Arc::new(Semaphore::new(max_concurrent)),
         }
+    }
+
+    pub async fn run(&self, input: Input) -> Result<(), BackendError> {
+        let map = self.solve(input.clone()).await?;
+        let source_code = ReportMaker::new(input, map).generate_html_report();
+        log::info!("Generated report source code: {}", source_code);
+        Ok(())
     }
 
     pub async fn solve(
