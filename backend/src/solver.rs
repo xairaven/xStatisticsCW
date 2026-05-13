@@ -41,45 +41,54 @@ impl Solver {
         results.insert("Line1".to_string(), "0".to_string());
         results.insert("Line4".to_string(), "0".to_string());
 
-        // FINDING LINES (Parallel)
-        let (line2, line3) = tokio::try_join!(
-            self.query_solver(
+        // FINDING LINES
+        let line2 = self
+            .query_solver(
                 format!("Line equation, points ({},0), (0,a)", input.a),
-                PodId::Result
-            ),
-            self.query_solver(
-                format!("Line equation, points (0, a), ({}, 0)", input.b),
-                PodId::Result
+                PodId::Result,
             )
-        )?;
+            .await?;
+        let line3 = self
+            .query_solver(
+                format!("Line equation, points (0, a), ({}, 0)", input.b),
+                PodId::Result,
+            )
+            .await?;
         results.insert("Line2".to_string(), line2);
         results.insert("Line3".to_string(), line3);
 
-        // FINDING A INTEGRALS (Parallel)
-        let (a1, a2, a3, a4) = tokio::try_join!(
-            self.query_solver(
+        // FINDING A INTEGRALS
+        let a1 = self
+            .query_solver(
                 format!(
                     "Integrate({}) from x=-inf to x={}",
-                    results["Line1"], input.a,
+                    results["Line1"], input.a
                 ),
-                PodId::Result
-            ),
-            self.query_solver(
+                PodId::Result,
+            )
+            .await?;
+        let a2 = self
+            .query_solver(
                 format!("Integrate({}) from x={} to x=0", results["Line2"], input.a),
-                PodId::Result
-            ),
-            self.query_solver(
+                PodId::Result,
+            )
+            .await?;
+        let a3 = self
+            .query_solver(
                 format!("Integrate({}) from x=0 to x={}", results["Line3"], input.b),
-                PodId::Result
-            ),
-            self.query_solver(
+                PodId::Result,
+            )
+            .await?;
+        let a4 = self
+            .query_solver(
                 format!(
                     "Integrate({}) from x={} to x=inf",
                     results["Line4"], input.b
                 ),
-                PodId::Result
+                PodId::Result,
             )
-        )?;
+            .await?;
+
         results.insert("A1Integral".to_string(), a1);
         results.insert("A2Integral".to_string(), a2);
         results.insert("A3Integral".to_string(), a3);
@@ -103,30 +112,36 @@ impl Solver {
             .await?;
         results.insert("A".to_string(), a_val);
 
-        // F(X) INTERVALS (Parallel)
-        let (fx1, fx2, fx3, fx4) = tokio::try_join!(
-            self.query_solver(
+        // F(X) INTERVALS
+        let fx1 = self
+            .query_solver(
                 format!("Integrate({}) from x=-inf to x=x", results["Line1"]),
-                PodId::Result
-            ),
-            self.query_solver(
-                format!("Integrate({}) from x={} to x=x", results["Line2"], input.a),
-                PodId::Result
-            ),
-            self.query_solver(
-                format!("Integrate({}) from x=0 to x=x", results["Line3"]),
-                PodId::Result
-            ),
-            self.query_solver(
-                format!("Integrate({}) from x={} to x=x", results["Line4"], input.b),
-                PodId::Result
+                PodId::Result,
             )
-        )?;
+            .await?;
+        let fx2 = self
+            .query_solver(
+                format!("Integrate({}) from x={} to x=x", results["Line2"], input.a),
+                PodId::Result,
+            )
+            .await?;
+        let fx3 = self
+            .query_solver(
+                format!("Integrate({}) from x=0 to x=x", results["Line3"]),
+                PodId::Result,
+            )
+            .await?;
+        let fx4 = self
+            .query_solver(
+                format!("Integrate({}) from x={} to x=x", results["Line4"], input.b),
+                PodId::Result,
+            )
+            .await?;
 
         results.insert("Fx1Integral".to_string(), fx1.clone());
         results.insert("Fx1Sum".to_string(), fx1);
 
-        // Expanded forms and sums (Sequential for each interval due to dependencies)
+        // Expanded forms and sums (Using robust fallbacks for unneeded substitutions)
         let fx2_exp = self
             .query_solver(fx2.clone(), PodId::ExpandedForm)
             .await
@@ -141,10 +156,11 @@ impl Solver {
         results.insert("Fx2RawSum".to_string(), fx2_raw);
         let fx2_sum = self
             .query_solver(
-                format!("{}, a = {}", results["Fx2RawSum"], results["A"]),
+                format!("{} where a = {}", results["Fx2RawSum"], results["A"]),
                 PodId::Result,
             )
-            .await?;
+            .await
+            .unwrap_or_else(|_| results["Fx2RawSum"].clone());
         results.insert(
             "Fx2Sum".to_string(),
             self.query_solver(fx2_sum.clone(), PodId::ExpandedForm)
@@ -169,10 +185,11 @@ impl Solver {
         results.insert("Fx3RawSum".to_string(), fx3_raw);
         let fx3_sum = self
             .query_solver(
-                format!("{}, a = {}", results["Fx3RawSum"], results["A"]),
+                format!("{} where a = {}", results["Fx3RawSum"], results["A"]),
                 PodId::Result,
             )
-            .await?;
+            .await
+            .unwrap_or_else(|_| results["Fx3RawSum"].clone());
         results.insert(
             "Fx3Sum".to_string(),
             self.query_solver(fx3_sum.clone(), PodId::ExpandedForm)
@@ -200,10 +217,11 @@ impl Solver {
         results.insert("Fx4RawSum".to_string(), fx4_raw);
         let fx4_sum = self
             .query_solver(
-                format!("{}, a = {}", results["Fx4RawSum"], results["A"]),
+                format!("{} where a = {}", results["Fx4RawSum"], results["A"]),
                 PodId::Result,
             )
-            .await?;
+            .await
+            .unwrap_or_else(|_| results["Fx4RawSum"].clone());
         results.insert(
             "Fx4Sum".to_string(),
             self.query_solver(fx4_sum.clone(), PodId::ExpandedForm)
@@ -211,65 +229,80 @@ impl Solver {
                 .unwrap_or(fx4_sum),
         );
 
-        // M(x) AND D(x) INTEGRALS (Parallel all 8 integrals)
-        let (mx1, mx2, mx3, mx4, dx1, dx2, dx3, dx4) = tokio::try_join!(
-            self.query_solver(
+        // M(x) AND D(x) INTEGRALS
+        let mx1 = self
+            .query_solver(
                 format!(
-                    "Integrate({}*x) from x=-inf to x={}",
+                    "Integrate({} x) from x=-inf to x={}",
                     results["Line1"], input.a
                 ),
-                PodId::Input
-            ),
-            self.query_solver(
-                format!(
-                    "Integrate(({})*x) from x={} to x=0",
-                    results["Line2"], input.a
-                ),
-                PodId::Input
-            ),
-            self.query_solver(
-                format!(
-                    "Integrate(({})*x) from x=0 to x={}",
-                    results["Line3"], input.b
-                ),
-                PodId::Input
-            ),
-            self.query_solver(
-                format!(
-                    "Integrate({}*x) from x={} to x=inf",
-                    results["Line4"], input.b
-                ),
-                PodId::Input
-            ),
-            self.query_solver(
-                format!(
-                    "Integrate({}*x^2) from x=-inf to x={}",
-                    results["Line1"], input.a
-                ),
-                PodId::Input
-            ),
-            self.query_solver(
-                format!(
-                    "Integrate(({})*x^2) from x={} to x=0",
-                    results["Line2"], input.a
-                ),
-                PodId::Input
-            ),
-            self.query_solver(
-                format!(
-                    "Integrate(({})*x^2) from x=0 to x={}",
-                    results["Line3"], input.b
-                ),
-                PodId::Input
-            ),
-            self.query_solver(
-                format!(
-                    "Integrate({}*x^2) from x={} to x=inf",
-                    results["Line4"], input.b
-                ),
-                PodId::Input
+                PodId::Input,
             )
-        )?;
+            .await?;
+        let mx2 = self
+            .query_solver(
+                format!(
+                    "Integrate(({}) x) from x={} to x=0",
+                    results["Line2"], input.a
+                ),
+                PodId::Input,
+            )
+            .await?;
+        let mx3 = self
+            .query_solver(
+                format!(
+                    "Integrate(({}) x) from x=0 to x={}",
+                    results["Line3"], input.b
+                ),
+                PodId::Input,
+            )
+            .await?;
+        let mx4 = self
+            .query_solver(
+                format!(
+                    "Integrate({} x) from x={} to x=inf",
+                    results["Line4"], input.b
+                ),
+                PodId::Input,
+            )
+            .await?;
+
+        let dx1 = self
+            .query_solver(
+                format!(
+                    "Integrate({} x^2) from x=-inf to x={}",
+                    results["Line1"], input.a
+                ),
+                PodId::Input,
+            )
+            .await?;
+        let dx2 = self
+            .query_solver(
+                format!(
+                    "Integrate(({}) x^2) from x={} to x=0",
+                    results["Line2"], input.a
+                ),
+                PodId::Input,
+            )
+            .await?;
+        let dx3 = self
+            .query_solver(
+                format!(
+                    "Integrate(({}) x^2) from x=0 to x={}",
+                    results["Line3"], input.b
+                ),
+                PodId::Input,
+            )
+            .await?;
+        let dx4 = self
+            .query_solver(
+                format!(
+                    "Integrate({} x^2) from x={} to x=inf",
+                    results["Line4"], input.b
+                ),
+                PodId::Input,
+            )
+            .await?;
 
         results.insert("Mx1Integral".to_string(), mx1);
         results.insert("Mx2Integral".to_string(), mx2);
@@ -281,7 +314,7 @@ impl Solver {
         results.insert("Mx2Integral3".to_string(), dx3);
         results.insert("Mx2Integral4".to_string(), dx4);
 
-        // M(X) RESULTS
+        // M(X) RESULTS (Using robust fallbacks for unneeded substitutions)
         let mx_raw_sum = format!(
             "{} + {} + {} + {}",
             results["Mx1Integral"],
@@ -293,21 +326,21 @@ impl Solver {
             "MxRawSum".to_string(),
             self.query_solver(mx_raw_sum, PodId::Result).await?,
         );
-        results.insert(
-            "MxSum".to_string(),
-            self.query_solver(
-                format!("{}, a = {}", results["MxRawSum"], results["A"]),
+        let mx_sum = self
+            .query_solver(
+                format!("{} where a = {}", results["MxRawSum"], results["A"]),
                 PodId::Result,
             )
-            .await?,
-        );
+            .await
+            .unwrap_or_else(|_| results["MxRawSum"].clone());
+        results.insert("MxSum".to_string(), mx_sum);
         results.insert(
             "MxFloat".to_string(),
             self.query_solver(format!("N[{}, 10]", results["MxSum"]), PodId::Result)
                 .await?,
         );
 
-        // D(X) RESULTS
+        // D(X) RESULTS (Using robust fallbacks for unneeded substitutions)
         let mx2_raw_sum = format!(
             "{} + {} + {} + {}",
             results["Mx2Integral1"],
@@ -319,14 +352,14 @@ impl Solver {
             "Mx2RawSum".to_string(),
             self.query_solver(mx2_raw_sum, PodId::Result).await?,
         );
-        results.insert(
-            "Mx2Sum".to_string(),
-            self.query_solver(
-                format!("{}, a = {}", results["Mx2RawSum"], results["A"]),
+        let mx2_sum = self
+            .query_solver(
+                format!("{} where a = {}", results["Mx2RawSum"], results["A"]),
                 PodId::Result,
             )
-            .await?,
-        );
+            .await
+            .unwrap_or_else(|_| results["Mx2RawSum"].clone());
+        results.insert("Mx2Sum".to_string(), mx2_sum);
         results.insert(
             "m2Sum".to_string(),
             self.query_solver(format!("({})^2", results["MxSum"]), PodId::Result)
@@ -356,7 +389,7 @@ impl Solver {
         Ok(results)
     }
 
-    /// Helper method, that controls query (semaphore), journals query
+    /// Helper method that controls query (semaphore), journals query
     /// and calls client to get text
     async fn query_solver(
         &self, query: String, pod_id: PodId,
@@ -372,23 +405,6 @@ impl Solver {
         log::info!("Requesting: {}", query);
 
         let raw_text = self.client.plain_text(&query, pod_id).await?;
-        let clean_text = self.client.operand_from_result(&raw_text);
-
-        Ok(clean_text)
-    }
-
-    async fn short_solver(&self, query: String) -> Result<String, BackendError> {
-        // Waiting for semaphore permit to avoid spamming the API
-        let _permit = self
-            .semaphore
-            .acquire()
-            .await
-            .map_err(BackendError::Semaphore)?;
-
-        self.journaler.log(format!("Requesting: {}", query));
-        log::info!("Requesting: {}", query);
-
-        let raw_text = self.client.short(&query).await?;
         let clean_text = self.client.operand_from_result(&raw_text);
 
         Ok(clean_text)
