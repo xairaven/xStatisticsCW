@@ -26,11 +26,11 @@ impl Solver {
         }
     }
 
-    pub async fn run(&self, input: Input) -> Result<(), BackendError> {
+    pub async fn run(&self, input: Input) -> Result<String, BackendError> {
         let map = self.solve(input.clone()).await?;
         let source_code = ReportMaker::new(input, map).generate_html_report();
-        log::info!("Generated report source code: {}", source_code);
-        Ok(())
+        log::info!("Generated report source code.");
+        Ok(source_code)
     }
 
     pub async fn solve(

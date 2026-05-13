@@ -3,6 +3,7 @@ use crate::logs::LogsError;
 use crate::ui::GraphicsBackendError;
 use crate::ui::errors::InputError;
 use backend::BackendError;
+use opener::OpenError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -21,4 +22,10 @@ pub enum FrontendError {
 
     #[error("Backend. {0}")]
     Backend(#[from] BackendError),
+
+    #[error("IO. {0}")]
+    IO(std::io::Error),
+
+    #[error("Opener. {0}")]
+    Opener(OpenError),
 }

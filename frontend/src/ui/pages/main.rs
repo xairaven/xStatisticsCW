@@ -133,11 +133,10 @@ impl MainPage {
 
                 // Send result back to UI
                 match result {
-                    Ok(map) => {
+                    Ok(code) => {
                         // TODO: Fix this, now it is like this for debug
-                        let _ =
-                            journaling_tx.try_send(format!("Solver result: {:?}", map));
-                        let _ = solver_tx.send(Ok(()));
+                        let _ = journaling_tx.try_send("Solver result: OK".to_string());
+                        let _ = solver_tx.send(Ok(code));
                     },
                     Err(error) => {
                         let _ = solver_tx.send(Err(error));

@@ -18,8 +18,8 @@ pub struct Context {
     pub journaling_tx: Sender<String>,
     pub journaling_rx: Receiver<String>,
 
-    pub solver_tx: Sender<Result<(), BackendError>>,
-    pub solver_rx: Receiver<Result<(), BackendError>>,
+    pub solver_tx: Sender<Result<String, BackendError>>,
+    pub solver_rx: Receiver<Result<String, BackendError>>,
 
     pub is_solving_in_process: bool,
 }

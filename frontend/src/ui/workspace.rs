@@ -37,8 +37,32 @@ impl Workspace {
                 context.is_solving_in_process = false;
 
                 match answer {
-                    Ok(_) => {
-                        // TODO: RFD, etc
+                    Ok(code) => {
+                        let mut current_path = match std::env::current_exe() {
+                            Ok(path) => path,
+                            Err(error) => {
+                                let error = FrontendError::IO(error);
+                                let _ = context.errors_tx.try_send(error);
+                                return;
+                            },
+                        };
+                        current_path.pop(); // Remove executable name
+                        current_path.push("statistics_report.html");
+
+                        if let Err(error) = std::fs::create_dir_all(&current_path) {
+                            let error = FrontendError::IO(error);
+                            let _ = context.errors_tx.try_send(error);
+                        }
+
+                        if let Err(error) = std::fs::write(&current_path, &code) {
+                            let error = FrontendError::IO(error);
+                            let _ = context.errors_tx.try_send(error);
+                        }
+
+                        if let Err(error) = opener::open(&current_path) {
+                            let error = FrontendError::Opener(error);
+                            let _ = context.errors_tx.try_send(error);
+                        }
                     },
                     Err(error) => {
                         let error = FrontendError::Backend(error);
