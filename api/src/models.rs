@@ -58,6 +58,7 @@ pub struct Image {
 pub enum PodId {
     Input,
     Result,
+    Substitution,
     Integral,
     DefiniteIntegral,
     IndefiniteIntegral,

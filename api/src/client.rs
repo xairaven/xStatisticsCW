@@ -12,16 +12,17 @@ pub struct WolframClient {
     http_client: Client,
 }
 
-const ANSWER_LIST: [PodId; 10] = [
+const ANSWER_LIST: [PodId; 11] = [
     PodId::Result,
+    PodId::Substitution,
     PodId::ExpandedForm,
     PodId::AlternateForm,
     PodId::PolynomialForm,
     PodId::Solution,
     PodId::Value,
+    PodId::DefiniteIntegral,
     PodId::Input,
     PodId::Integral,
-    PodId::DefiniteIntegral,
     PodId::IndefiniteIntegral,
 ];
 
@@ -119,7 +120,7 @@ impl WolframClient {
                     .result
                     .pods
                     .iter()
-                    .find(|p| p.id == *id.to_string())
+                    .find(|p| p.id == id.to_string())
                 {
                     target_pod = Some(p);
                     break;
@@ -158,19 +159,19 @@ impl WolframClient {
     }
 
     pub fn operand_from_result(&self, text: &str) -> String {
-        // Defence from "where a = 1/10". If the string contains such condition,
+        // Defence from commas or where statements. If the string contains such conditions,
         // we should not split it by `=`, otherwise we will lose the formula itself.
-        if text.contains(" where ") {
+        if text.contains(" where ") || text.contains(", ") {
             return text.trim().to_string();
         }
 
         // Split string by symbol "=" and get last part
-        // If there's no "=", return whole string
-        text.split('=')
-            .next_back()
-            .unwrap_or(text) // fallback (in case string is empty or doesn't contain "=")
-            .trim()
-            .to_string()
+        let parts: Vec<&str> = text.split('=').collect();
+        if parts.len() > 1 {
+            parts[1].trim().to_string()
+        } else {
+            text.trim().to_string()
+        }
     }
 
     async fn query(&self, input: &str) -> Result<Container, ApiError> {
@@ -193,8 +194,27 @@ impl WolframClient {
             return Err(ApiError::Http(response.status().as_u16()));
         }
 
+        let raw_json = response.text().await?;
+
+        // Fallback for missing 'pods' array when success is false.
+        // This prevents the application from crashing with a Serde decoding error.
+        if raw_json.contains("\"success\":false")
+            || raw_json.contains("\"success\": false")
+        {
+            return Err(ApiError::Wolfram(
+                "Wolfram Alpha returned success = false".to_string(),
+            ));
+        }
+
         // Deserialize the JSON payload into our structures
-        let container = response.json::<Container>().await?;
+        let container = match serde_json::from_str::<Container>(&raw_json) {
+            Ok(c) => c,
+            Err(e) => {
+                log::error!("JSON Decode Error: {}", e);
+                log::error!("Raw JSON: {}", raw_json);
+                return Err(ApiError::Wolfram(format!("JSON Decode Error: {}", e)));
+            },
+        };
 
         // Ensure Wolfram Alpha successfully parsed and computed the query
         if !container.result.success {
