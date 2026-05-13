@@ -47,12 +47,13 @@ impl Workspace {
                             },
                         };
                         current_path.pop(); // Remove executable name
-                        current_path.push("statistics_report.html");
 
                         if let Err(error) = std::fs::create_dir_all(&current_path) {
                             let error = FrontendError::IO(error);
                             let _ = context.errors_tx.try_send(error);
                         }
+
+                        current_path.push("statistics_report.html");
 
                         if let Err(error) = std::fs::write(&current_path, &code) {
                             let error = FrontendError::IO(error);
